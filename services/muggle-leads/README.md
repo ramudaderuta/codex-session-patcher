@@ -87,5 +87,6 @@ https://你的 Worker 域名/admin
 ## 安全说明
 
 - Telegram Bot token 只保存在 Cloudflare Worker secrets，不进入本地工具和前端构建产物。
+- Worker 会拒绝称呼、联系方式和合作需求里的脚本标签、HTML 标签以及事件处理器样式内容；被拒绝的请求不会保存，也不会通知 Telegram。
 - 提交接口按来源和 IP 哈希做 60 秒 3 次的简单限频。
 - `IP_HASH_SALT` 用于生成不可逆的客户端标识，建议设置。

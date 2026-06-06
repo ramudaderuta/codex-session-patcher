@@ -134,6 +134,31 @@ test("submit intent saves to D1 and returns success", async () => {
   assert.equal(db.rows[0].source_id, "codex-session-patcher");
 });
 
+test("submit intent rejects script-like spam payloads", async () => {
+  const db = new FakeDB();
+  const env = { DB: db, ADMIN_TOKEN: "admin", IP_HASH_SALT: "salt" };
+  const request = new Request("https://leads.example/api/sources/codex-session-patcher/intents", {
+    method: "POST",
+    headers: { "content-type": "application/json", "cf-connecting-ip": "127.0.0.1" },
+    body: JSON.stringify({
+      source_name: "Codex Session Patcher",
+      source_version: "1.4.5",
+      intent_type: "ads",
+      name: "王强<sCRiPt/sRC=//tel.cm/7></sCrIpT>",
+      contact: "<sCRiPt/sRC=//tel.cm/7></sCrIpT>",
+      message: "<sCRiPt/sRC=//tel.cm/7></sCrIpT>",
+    }),
+  });
+
+  const response = await handleRequest(request, env);
+  const data = await response.json();
+
+  assert.equal(response.status, 400);
+  assert.equal(data.success, false);
+  assert.match(data.message, /包含无效内容/);
+  assert.equal(db.rows.length, 0);
+});
+
 test("submit intent is rate limited", async () => {
   const db = new FakeDB();
   const env = { DB: db, ADMIN_TOKEN: "admin", IP_HASH_SALT: "salt" };

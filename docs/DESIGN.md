@@ -47,6 +47,8 @@ Web UI 顶部右侧显示当前应用版本号，版本号来自 Python 包的 `
 
 Web UI 的合作页提供合作意向表单。前端将表单提交到本地后端 `/api/cooperation/intent`，本地后端只做字段校验并转发到作者部署的 `Muggle Leads` 线上服务（`https://leads.3jiezhiwai.com`），不保存 Telegram Bot token，也不直接调用 Telegram。普通用户本地运行时不需要配置提交地址；`MUGGLE_LEADS_ENDPOINT` 仅作为 fork 项目或开发测试时的覆盖地址。真正的数据保存、后台管理和 Telegram 通知由作者部署的 Cloudflare Worker 服务完成。
 
+Muggle Leads 在服务端再次校验输入。称呼、联系方式和合作需求会拒绝脚本标签、HTML 标签以及事件处理器样式的内容；被拒绝的请求不写入 D1，也不会发送 Telegram 通知。前端长度限制只用于减少误填，不能作为安全边界。
+
 ## 2. 数据结构设计
 
 ### 2.1 会话文件结构 (JSON)

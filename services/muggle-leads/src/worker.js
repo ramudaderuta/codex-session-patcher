@@ -8,6 +8,12 @@ const INTENT_TYPES = {
 const STATUSES = new Set(["new", "contacted", "closed"]);
 const RATE_WINDOW_SECONDS = 60;
 const RATE_MAX = 3;
+const UNSAFE_TEXT_PATTERNS = [
+  /<\s*\/?\s*[a-z][^>]*>/i,
+  /\bon[a-z]+\s*=/i,
+  /\bjavascript\s*:/i,
+  /\bdata\s*:\s*text\/html/i,
+];
 
 export default {
   fetch(request, env) {
@@ -124,6 +130,9 @@ export function normalizeIntent(raw, sourceId) {
   if (!name) throw new Error("称呼不能为空");
   if (!contact) throw new Error("联系方式不能为空");
   if (message.length < 5) throw new Error("合作需求不能少于 5 个字符");
+  assertSafeText("称呼", name);
+  assertSafeText("联系方式", contact);
+  assertSafeText("合作需求", message);
 
   return {
     source_id,
@@ -139,6 +148,12 @@ export function normalizeIntent(raw, sourceId) {
 
 function clean(value, limit) {
   return String(value || "").trim().slice(0, limit);
+}
+
+function assertSafeText(label, value) {
+  if (UNSAFE_TEXT_PATTERNS.some((pattern) => pattern.test(value))) {
+    throw new Error(`${label}包含无效内容`);
+  }
 }
 
 async function clientFingerprint(request, env, sourceId) {
