@@ -48,12 +48,17 @@ export function adminPage() {
     .left{width:340px;display:grid;gap:12px}
     .right{flex:1;min-width:320px;display:grid;gap:12px}
     .panel{background:rgba(24,23,19,.94);border:1px solid var(--line);border-radius:var(--radius);padding:14px;box-shadow:0 18px 60px rgba(0,0,0,.22)}
-    .tabs{display:flex;gap:8px;flex-wrap:wrap}
-    .tabs a{background:transparent;border-color:var(--line);color:var(--muted)}
+    .tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .tabs a{min-height:54px;padding:0 18px;background:transparent;border-color:var(--line);color:var(--muted);font-size:16px;font-weight:700;justify-content:space-between}
     .tabs a.active{background:var(--accent);border-color:var(--accent);color:#17130b}
+    .tab-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .slot-button{width:100%;display:grid;gap:4px;text-align:left;margin:8px 0;background:var(--panel-2)}
     .slot-button.active{border-color:var(--accent)}
     .slot-button small,.muted{color:var(--muted)}
+    .count-pill{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;border:1px solid var(--line);border-radius:999px;padding:0 8px;margin-left:10px;color:var(--muted);font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;background:rgba(16,16,14,.34);flex:0 0 auto}
+    .count-pill.hot{border-color:rgba(124,197,139,.45);color:var(--ok);background:rgba(124,197,139,.12)}
+    .tabs a.active .count-pill{border-color:rgba(23,19,11,.28);color:#5f4c24;background:rgba(23,19,11,.08)}
+    .tabs a.active .count-pill.hot{border-color:rgba(89,128,69,.38);color:#5f8b4a;background:rgba(88,133,70,.14)}
     .campaign-row{display:grid;grid-template-columns:1fr auto;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
     .campaign-row:last-child{border-bottom:0}
     .badge{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:2px 8px;color:var(--muted);font-size:12px}
@@ -78,7 +83,7 @@ export function adminPage() {
 <body>
   <main>
     <h1 class="brand"><span class="brand-mark">${ADMIN_LOGO_SVG}</span><span>麻瓜合作台</span></h1>
-    <section id="login" class="login">
+    <section id="login" class="login hidden">
       <input id="token" type="password" placeholder="管理 Token" />
       <button id="loginBtn" data-state="idle">登录</button>
       <span id="loginMsg" class="status bad"></span>
@@ -120,7 +125,8 @@ export function adminPage() {
     </section>
   </main>
   <script>
-    const state = { projects: [], projectId: "", slots: [], groupKey: "", slot: null, campaigns: [], editing: null };
+    const state = { projects: [], projectId: "", slots: [], groupKey: "", slot: null, campaigns: [], slotCampaigns: {}, editing: null };
+    let campaignLoadSeq = 0;
     const statusLabels = { draft: "草稿", disabled: "已停用", scheduled: "已排期", running: "投放中", expired: "已过期" };
     const billingLabels = [["one_time","一次性"],["yearly","每年"],["monthly","每月"],["weekly","每周"],["daily","每天"]];
     const fitLabels = [["natural","原图比例"],["contain","完整显示"],["cover","铺满裁切"],["fill","强制拉伸"]];
@@ -146,18 +152,33 @@ export function adminPage() {
     $("#newCampaignBtn").onclick = () => renderCampaignForm(null);
     document.querySelectorAll(".nav [data-view]").forEach(link => link.onclick = event => { event.preventDefault(); setView(link.dataset.view); });
     ["source","status","q"].forEach(id => $("#" + id).addEventListener("input", debounce(loadIntents, 250)));
+    restoreAdminSession();
+
+    async function restoreAdminSession() {
+      try {
+        $("#loginMsg").textContent = "";
+        await enterAdminApp({ throwOnError:true });
+      } catch {
+        $("#app").classList.add("hidden");
+        $("#login").classList.remove("hidden");
+      }
+    }
+
+    async function enterAdminApp(options = {}) {
+      $("#login").classList.add("hidden");
+      $("#app").classList.remove("hidden");
+      await loadProjects(options);
+    }
 
     async function loginAdmin() {
       $("#loginBtn").dataset.state = "busy";
       $("#loginMsg").textContent = "";
       try {
         const token = $("#token").value;
-        const res = await fetch("/api/admin/login", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ token }) });
+        const res = await fetch("/api/admin/login", { method:"POST", credentials:"same-origin", headers:{ "content-type":"application/json" }, body: JSON.stringify({ token }) });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.success) throw new Error(data.message || "登录失败");
-        $("#login").classList.add("hidden");
-        $("#app").classList.remove("hidden");
-        await loadProjects();
+        await enterAdminApp();
       } catch (error) {
         $("#loginMsg").textContent = error.message || "登录失败";
       } finally {
@@ -171,13 +192,14 @@ export function adminPage() {
         init.headers = { "content-type":"application/json", ...(init.headers || {}) };
         init.body = JSON.stringify(init.body);
       }
+      init.credentials = init.credentials || "same-origin";
       const res = await fetch(path, init);
       const data = await res.json().catch(() => ({}));
       if (!res.ok || data.success === false) throw new Error(data.message || "请求失败");
       return data;
     }
 
-    async function loadProjects() {
+    async function loadProjects(options = {}) {
       setGlobal("加载项目中", "warn");
       try {
         const data = await api("/api/admin/ad-projects");
@@ -192,6 +214,7 @@ export function adminPage() {
         await loadSlots();
       } catch (error) {
         setGlobal(error.message || "项目加载失败", "bad");
+        if (options.throwOnError) throw error;
       }
     }
 
@@ -200,34 +223,43 @@ export function adminPage() {
       setGlobal("加载广告位中", "warn");
       const data = await api("/api/admin/ad-projects/" + encodeURIComponent(state.projectId) + "/ad-slots");
       state.slots = data.items || [];
+      state.slotCampaigns = {};
       state.groupKey = state.groupKey || state.slots[0]?.group_key || "";
+      await loadCampaignSummaries();
       renderTabs();
       renderSlots();
-      selectSlot(state.slots.find(slot => slot.id === state.slot?.id) || state.slots.find(slot => slot.group_key === state.groupKey) || null);
+      await selectSlot(state.slots.find(slot => slot.id === state.slot?.id) || state.slots.find(slot => slot.group_key === state.groupKey) || null);
       setGlobal("共 " + state.slots.length + " 个广告位", "ok");
     }
 
     function renderTabs() {
       const groups = [...new Map(state.slots.map(slot => [slot.group_key, slot.group_label])).entries()];
-      $("#tabs").innerHTML = groups.length ? groups.map(([key, label]) => "<a href='#' class='action-link " + (key === state.groupKey ? "active" : "") + "' data-group='" + esc(key) + "'>" + esc(label) + "</a>").join("") : "<span class='muted'>当前项目还没有广告位</span>";
-      $("#tabs").querySelectorAll("[data-group]").forEach(link => link.onclick = event => {
+      $("#tabs").innerHTML = groups.length ? groups.map(([key, label]) => {
+        const total = groupCampaignCount(key);
+        return "<a href='#' class='action-link " + (key === state.groupKey ? "active" : "") + "' data-group='" + esc(key) + "'><span class='tab-name'>" + esc(label) + "</span>" + countPill(total) + "</a>";
+      }).join("") : "<span class='muted'>当前项目还没有广告位</span>";
+      $("#tabs").querySelectorAll("[data-group]").forEach(link => link.onclick = async event => {
         event.preventDefault();
         state.groupKey = link.dataset.group;
         state.slot = null;
         renderTabs();
         renderSlots();
-        selectSlot(state.slots.find(slot => slot.group_key === state.groupKey) || null);
+        await selectSlot(state.slots.find(slot => slot.group_key === state.groupKey) || null);
       });
     }
 
     function renderSlots() {
       const slots = state.slots.filter(slot => slot.group_key === state.groupKey);
-      $("#slots").innerHTML = slots.length ? slots.map(slot => "<a href='#' class='action-link slot-button " + (state.slot?.id === slot.id ? "active" : "") + "' data-slot='" + esc(slot.id) + "'><strong>" + esc(slot.position_label) + "</strong></a>").join("") : "<span class='muted'>这个页面还没有广告位</span>";
-      $("#slots").querySelectorAll("[data-slot]").forEach(link => link.onclick = event => { event.preventDefault(); selectSlot(state.slots.find(slot => slot.id === link.dataset.slot)); });
+      $("#slots").innerHTML = slots.length ? slots.map(slot => {
+        const summary = slotCampaignSummary(slot.id);
+        return "<a href='#' class='action-link slot-button " + (state.slot?.id === slot.id ? "active" : "") + "' data-slot='" + esc(slot.id) + "'><strong>" + esc(slot.position_label) + countPill(summary.enabled) + "</strong><small>" + esc(summary.label) + "</small></a>";
+      }).join("") : "<span class='muted'>这个页面还没有广告位</span>";
+      $("#slots").querySelectorAll("[data-slot]").forEach(link => link.onclick = async event => { event.preventDefault(); await selectSlot(state.slots.find(slot => slot.id === link.dataset.slot)); });
     }
 
     async function selectSlot(slot) {
       state.slot = slot;
+      state.campaigns = [];
       renderSlots();
       $("#campaignForm").classList.add("hidden");
       if (!slot) {
@@ -236,15 +268,66 @@ export function adminPage() {
         return;
       }
       $("#slotDetail").innerHTML = "<h3>" + esc(slot.group_label) + " · " + esc(slot.position_label) + "</h3><p class='muted'>建议比例 " + esc(slot.suggested_ratio || "-") + "，建议尺寸 " + esc(slot.suggested_size || "-") + "。默认宽度 " + esc(slot.default_width) + "，最高 " + esc(slot.default_max_height) + "。</p>";
-      await loadCampaigns();
+      await loadCampaigns(slot);
     }
 
-    async function loadCampaigns() {
-      if (!state.slot) return;
-      const data = await api("/api/admin/ad-slots/" + encodeURIComponent(state.slot.id) + "/campaigns");
-      state.campaigns = data.items || [];
-      $("#campaigns").innerHTML = "<h3>投放</h3>" + (state.campaigns.length ? state.campaigns.map(campaign => "<div class='campaign-row'><div><strong>" + esc(campaign.name || "未命名投放") + "</strong><div class='campaign-meta'><span class='badge " + esc(campaign.status) + "'>" + (statusLabels[campaign.status] || campaign.status) + "</span><span class='muted'>" + esc(showTime(campaign.start_at)) + " - " + esc(showTime(campaign.end_at)) + "</span><span class='muted'>" + esc(campaign.rent_amount || "") + " " + esc(campaign.currency || "") + "</span></div></div><a class='action-link' href='#' data-edit='" + esc(campaign.id) + "'>编辑</a></div>").join("") : "<p class='muted'>还没有投放。</p>");
+    async function loadCampaigns(slot = state.slot) {
+      if (!slot) return;
+      const seq = ++campaignLoadSeq;
+      $("#campaigns").innerHTML = "<h3>投放记录 · " + esc(slot.group_label) + " / " + esc(slot.position_label) + "</h3><p class='muted'>加载投放记录中...</p>";
+      try {
+        const data = await api("/api/admin/ad-slots/" + encodeURIComponent(slot.id) + "/campaigns");
+        if (seq !== campaignLoadSeq || state.slot?.id !== slot.id) return;
+        state.campaigns = data.items || [];
+        state.slotCampaigns[slot.id] = state.campaigns;
+        renderTabs();
+        renderSlots();
+        renderCampaignList(slot);
+      } catch (error) {
+        if (seq !== campaignLoadSeq || state.slot?.id !== slot.id) return;
+        state.campaigns = [];
+        $("#campaigns").innerHTML = "<h3>投放记录 · " + esc(slot.group_label) + " / " + esc(slot.position_label) + "</h3><p class='status bad'>" + esc(error.message || "投放记录加载失败") + "</p>";
+      }
+    }
+
+    function renderCampaignList(slot = state.slot) {
+      const title = slot ? "投放记录 · " + esc(slot.group_label) + " / " + esc(slot.position_label) : "投放记录";
+      $("#campaigns").innerHTML = "<h3>" + title + "</h3>" + (state.campaigns.length ? state.campaigns.map(campaign => "<div class='campaign-row'><div><strong>" + esc(campaign.name || "未命名投放") + "</strong><div class='campaign-meta'><span class='badge " + esc(campaign.status) + "'>" + (statusLabels[campaign.status] || campaign.status) + "</span><span class='muted'>" + esc(showTime(campaign.start_at)) + " - " + esc(showTime(campaign.end_at)) + "</span><span class='muted'>" + esc(campaign.rent_amount || "") + " " + esc(campaign.currency || "") + "</span></div></div><a class='action-link' href='#' data-edit='" + esc(campaign.id) + "'>编辑</a></div>").join("") : "<p class='muted'>该广告位还没有投放记录。</p>");
       $("#campaigns").querySelectorAll("[data-edit]").forEach(link => link.onclick = event => { event.preventDefault(); renderCampaignForm(state.campaigns.find(campaign => campaign.id === link.dataset.edit)); });
+    }
+
+    async function loadCampaignSummaries() {
+      await Promise.all(state.slots.map(async slot => {
+        try {
+          const data = await api("/api/admin/ad-slots/" + encodeURIComponent(slot.id) + "/campaigns");
+          state.slotCampaigns[slot.id] = data.items || [];
+        } catch {
+          state.slotCampaigns[slot.id] = [];
+        }
+      }));
+    }
+
+    function groupCampaignCount(groupKey) {
+      return state.slots
+        .filter(slot => slot.group_key === groupKey)
+        .reduce((total, slot) => total + slotCampaignSummary(slot.id).enabled, 0);
+    }
+
+    function slotCampaignSummary(slotId) {
+      const campaigns = state.slotCampaigns[slotId] || [];
+      const running = campaigns.filter(campaign => campaign.status === "running").length;
+      const scheduled = campaigns.filter(campaign => campaign.status === "scheduled").length;
+      const enabled = running + scheduled;
+      return {
+        total: campaigns.length,
+        label: running ? "投放中 " + running + " 条" : scheduled ? "已排期 " + scheduled + " 条" : campaigns.length ? "无生效投放，共 " + campaigns.length + " 条记录" : "无投放记录",
+        enabled
+      };
+    }
+
+    function countPill(total) {
+      const count = Number(total) || 0;
+      return "<span class='count-pill " + (count ? "hot" : "") + "'>" + count + "</span>";
     }
 
     function renderCampaignForm(campaign) {
@@ -260,7 +343,7 @@ export function adminPage() {
         "<div id='ratioMsg' class='status'></div>" +
         "<div class='form-grid'>" +
         field("name","投放名称",campaign?.name || "") +
-        "<label>状态<select name='enabled'><option value='0' " + (!campaign?.enabled ? "selected" : "") + ">保存草稿</option><option value='1' " + (campaign?.enabled ? "selected" : "") + ">启用投放</option></select></label>" +
+        "<label>投放状态<select name='enabled'><option value='0' " + (!campaign?.enabled ? "selected" : "") + ">草稿，不展示</option><option value='1' " + (campaign?.enabled ? "selected" : "") + ">启用，到时间展示</option></select></label>" +
         field("image_url","外部图片地址",campaign?.image_url || "", "https://...") +
         field("click_url","点击链接",campaign?.click_url || "", "https://... 或 mqqapi://...") +
         field("start_at","开始时间",isoToBeijingLocal(campaign?.start_at), "", "datetime-local") +
@@ -274,8 +357,10 @@ export function adminPage() {
         field("title","提示文案",campaign?.title || "") +
         field("alt","图片说明",campaign?.alt || "") +
         "<label class='full'>租金备注<textarea name='rent_note'>" + esc(campaign?.rent_note || "") + "</textarea></label>" +
-        "</div><div class='actions'><input class='primary action-link' type='submit' value='保存'><a href='#' class='action-link' id='cancelEdit'>取消</a><span id='formMsg' class='status'></span></div>";
+        "</div><div class='actions'><button type='button' class='action-link' id='saveDraftBtn'>保存草稿</button><button type='button' class='primary' id='enableCampaignBtn'>启用投放</button><a href='#' class='action-link' id='cancelEdit'>取消</a><span id='formMsg' class='status'></span></div>";
       form.onsubmit = event => { event.preventDefault(); saveCampaign(); };
+      $("#saveDraftBtn").onclick = () => saveCampaign({ forceDraft:true });
+      $("#enableCampaignBtn").onclick = () => saveCampaign({ forceEnabled:true });
       $("#cancelEdit").onclick = event => { event.preventDefault(); form.classList.add("hidden"); };
       bindDropzone();
       form.scrollIntoView({ behavior:"smooth", block:"start" });
@@ -299,13 +384,16 @@ export function adminPage() {
     async function saveCampaign(options = {}) {
       if (!state.slot) return null;
       const form = $("#campaignForm");
-      const button = form.querySelector("input[type=submit]");
+      const button = options.forceEnabled ? $("#enableCampaignBtn") : options.forceDraft ? $("#saveDraftBtn") : form.querySelector("button.primary, input[type=submit]");
       const msg = $("#formMsg");
       if (button) button.dataset.state = "busy";
       setNode(msg, "保存中", "warn");
       try {
+        if (options.forceDraft) form.elements.enabled.value = "0";
+        if (options.forceEnabled) form.elements.enabled.value = "1";
         const body = campaignBody();
         if (options.forceDraft) body.enabled = false;
+        if (options.forceEnabled) body.enabled = true;
         const id = form.elements.id.value;
         const method = id ? "PATCH" : "POST";
         const path = id ? "/api/admin/ad-campaigns/" + encodeURIComponent(id) : "/api/admin/ad-slots/" + encodeURIComponent(state.slot.id) + "/campaigns";
@@ -453,6 +541,10 @@ export function adminPage() {
       if (Number.isNaN(date.getTime())) return "";
       const shifted = new Date(date.getTime() + 8 * 60 * 60 * 1000);
       return shifted.getUTCFullYear() + "-" + pad(shifted.getUTCMonth() + 1) + "-" + pad(shifted.getUTCDate()) + "T" + pad(shifted.getUTCHours()) + ":" + pad(shifted.getUTCMinutes());
+    }
+
+    function pad(value) {
+      return String(value).padStart(2, "0");
     }
 
     function beijingLocalToIso(value) {

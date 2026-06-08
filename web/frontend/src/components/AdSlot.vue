@@ -1,7 +1,7 @@
 <template>
   <aside
     class="ad-slot-frame"
-    :class="{ 'ad-slot-frame-empty': !slot }"
+    :class="[`ad-slot-frame-${side}`, { 'ad-slot-frame-empty': !slot }]"
     :style="frameStyle"
     aria-label="广告位"
   >
@@ -35,6 +35,11 @@ const props = defineProps({
   slot: {
     type: Object,
     default: null
+  },
+  side: {
+    type: String,
+    default: 'left',
+    validator: value => ['left', 'right'].includes(value)
   }
 })
 
@@ -48,6 +53,7 @@ const frameStyle = computed(() => {
   }
 
   return {
+    '--ad-slot-width': props.slot.width,
     '--ad-slot-max-height': props.slot.maxHeight,
     '--ad-slot-bg': props.slot.background
   }
@@ -60,6 +66,7 @@ const linkRel = computed(() => (isHttpLink.value ? 'noopener noreferrer' : undef
 
 <style scoped>
 .ad-slot-frame {
+  align-self: start;
   min-width: 0;
   width: 100%;
 }
@@ -69,8 +76,6 @@ const linkRel = computed(() => (isHttpLink.value ? 'noopener noreferrer' : undef
 }
 
 .ad-slot-card {
-  position: sticky;
-  top: 16px;
   display: block;
   width: 100%;
   min-width: 0;
@@ -84,6 +89,23 @@ const linkRel = computed(() => (isHttpLink.value ? 'noopener noreferrer' : undef
     transform var(--transition-fast),
     border-color var(--transition-fast),
     box-shadow var(--transition-fast);
+}
+
+@media (min-width: 1481px) {
+  .ad-slot-card {
+    position: fixed;
+    top: calc(var(--header-height) + 52px + 16px);
+    z-index: 20;
+    width: min(var(--ad-slot-width, 320px), calc((100vw - 880px) / 2));
+  }
+
+  .ad-slot-frame-left .ad-slot-card {
+    left: 16px;
+  }
+
+  .ad-slot-frame-right .ad-slot-card {
+    right: 16px;
+  }
 }
 
 .ad-slot-card:not(.ad-slot-card-static) {

@@ -168,44 +168,44 @@
             class="ad-layout"
             :style="getAdLayoutStyle('enhance')"
           >
-            <AdSlot :slot="getAdSlot('enhance', 'left')" />
+            <AdSlot :slot="getAdSlot('enhance', 'left')" side="left" />
             <main class="ad-layout-main">
               <PromptEnhancePanel />
             </main>
-            <AdSlot :slot="getAdSlot('enhance', 'right')" />
+            <AdSlot :slot="getAdSlot('enhance', 'right')" side="right" />
           </div>
           <div
             v-if="activeTab === 'settings'"
             class="ad-layout"
             :style="getAdLayoutStyle('settings')"
           >
-            <AdSlot :slot="getAdSlot('settings', 'left')" />
+            <AdSlot :slot="getAdSlot('settings', 'left')" side="left" />
             <main class="ad-layout-main">
               <SettingsPanel />
             </main>
-            <AdSlot :slot="getAdSlot('settings', 'right')" />
+            <AdSlot :slot="getAdSlot('settings', 'right')" side="right" />
           </div>
           <div
             v-if="activeTab === 'help'"
             class="ad-layout"
             :style="getAdLayoutStyle('help')"
           >
-            <AdSlot :slot="getAdSlot('help', 'left')" />
+            <AdSlot :slot="getAdSlot('help', 'left')" side="left" />
             <main class="ad-layout-main">
               <HelpPanel />
             </main>
-            <AdSlot :slot="getAdSlot('help', 'right')" />
+            <AdSlot :slot="getAdSlot('help', 'right')" side="right" />
           </div>
           <div
             v-if="activeTab === 'cooperation'"
             class="ad-layout"
             :style="getAdLayoutStyle('cooperation')"
           >
-            <AdSlot :slot="getAdSlot('cooperation', 'left')" />
+            <AdSlot :slot="getAdSlot('cooperation', 'left')" side="left" />
             <main class="ad-layout-main">
               <CooperationPanel />
             </main>
-            <AdSlot :slot="getAdSlot('cooperation', 'right')" />
+            <AdSlot :slot="getAdSlot('cooperation', 'right')" side="right" />
           </div>
         </n-layout-content>
 
