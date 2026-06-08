@@ -1,16 +1,30 @@
+const ADMIN_LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true">
+  <rect width="64" height="64" rx="14" fill="var(--bg)"/>
+  <path d="M16 18h32v28H16z" fill="var(--panel)" stroke="var(--accent)" stroke-width="3"/>
+  <path d="M23 42V25l9 11 9-11v17" fill="none" stroke="var(--text)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="48" cy="17" r="5" fill="var(--ok)"/>
+</svg>`;
+
+const ADMIN_FAVICON_HREF = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9IiMxMDEwMGUiLz48cGF0aCBkPSJNMTYgMThoMzJ2MjhIMTZ6IiBmaWxsPSIjMTgxNzEzIiBzdHJva2U9IiNmMWM4NmIiIHN0cm9rZS13aWR0aD0iMyIvPjxwYXRoIGQ9Ik0yMyA0MlYyNWw5IDExIDktMTF2MTciIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2Y3ZjBkZiIgc3Ryb2tlLXdpZHRoPSI0IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48Y2lyY2xlIGN4PSI0OCIgY3k9IjE3IiByPSI1IiBmaWxsPSIjN2NjNThiIi8+PC9zdmc+";
+
 export function adminPage() {
   return `<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>麻瓜合作台</title>
+  <title>麻瓜合作台 · 广告位控制台</title>
+  <link rel="icon" type="image/svg+xml" href="${ADMIN_FAVICON_HREF}" />
+  <link rel="shortcut icon" type="image/svg+xml" href="${ADMIN_FAVICON_HREF}" />
   <style>
     :root{--bg:#10100e;--panel:#181713;--panel-2:#211f19;--field:#242219;--line:#373225;--line-strong:#665b42;--text:#f7f0df;--muted:#a79b83;--ok:#7cc58b;--bad:#df7d6f;--warn:#d8b35f;--accent:#f1c86b;--radius:14px}
     *{box-sizing:border-box}
     body{margin:0;background:radial-gradient(circle at 10% 0%,#30291a 0,#10100e 36%),linear-gradient(135deg,#10100e,#18150f);color:var(--text);font:14px/1.5 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
     main{max-width:1220px;margin:0 auto;padding:28px}
     h1{font-size:25px;margin:0 0 18px;letter-spacing:.02em}
+    .brand{display:flex;align-items:center;gap:10px}
+    .brand-mark{width:34px;height:34px;display:inline-grid;place-items:center;border:1px solid var(--line);border-radius:10px;background:var(--panel);box-shadow:0 10px 28px rgba(0,0,0,.28)}
+    .brand-mark svg{width:25px;height:25px;display:block}
     h2,h3{margin:0}
     input,select,button,textarea{font:inherit}
     input,select,textarea{width:100%;background:var(--field);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:9px 10px}
@@ -63,7 +77,7 @@ export function adminPage() {
 </head>
 <body>
   <main>
-    <h1>麻瓜合作台</h1>
+    <h1 class="brand"><span class="brand-mark">${ADMIN_LOGO_SVG}</span><span>麻瓜合作台</span></h1>
     <section id="login" class="login">
       <input id="token" type="password" placeholder="管理 Token" />
       <button id="loginBtn" data-state="idle">登录</button>
