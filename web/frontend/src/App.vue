@@ -166,7 +166,6 @@
           <div
             v-if="activeTab === 'enhance'"
             class="ad-layout"
-            :class="getAdLayoutClass('enhance')"
             :style="getAdLayoutStyle('enhance')"
           >
             <AdSlot :slot="getAdSlot('enhance', 'left')" />
@@ -178,7 +177,6 @@
           <div
             v-if="activeTab === 'settings'"
             class="ad-layout"
-            :class="getAdLayoutClass('settings')"
             :style="getAdLayoutStyle('settings')"
           >
             <AdSlot :slot="getAdSlot('settings', 'left')" />
@@ -190,7 +188,6 @@
           <div
             v-if="activeTab === 'help'"
             class="ad-layout"
-            :class="getAdLayoutClass('help')"
             :style="getAdLayoutStyle('help')"
           >
             <AdSlot :slot="getAdSlot('help', 'left')" />
@@ -202,7 +199,6 @@
           <div
             v-if="activeTab === 'cooperation'"
             class="ad-layout"
-            :class="getAdLayoutClass('cooperation')"
             :style="getAdLayoutStyle('cooperation')"
           >
             <AdSlot :slot="getAdSlot('cooperation', 'left')" />
@@ -287,21 +283,6 @@ const adSlotMap = computed(() => {
 
 function getAdSlot(tab, position) {
   return adSlotMap.value.get(`${tab}:${position}`) || null
-}
-
-function hasAdsForTab(tab) {
-  return AD_POSITIONS.some(position => Boolean(getAdSlot(tab, position)))
-}
-
-function getAdLayoutClass(tab) {
-  const hasLeft = Boolean(getAdSlot(tab, 'left'))
-  const hasRight = Boolean(getAdSlot(tab, 'right'))
-
-  return {
-    'ad-layout-empty': !hasLeft && !hasRight,
-    'ad-layout-left-only': hasLeft && !hasRight,
-    'ad-layout-right-only': !hasLeft && hasRight
-  }
 }
 
 function getAdLayoutStyle(tab) {
@@ -676,25 +657,7 @@ onUnmounted(() => {
   grid-template-columns: var(--ad-left-width) minmax(0, 800px) var(--ad-right-width);
   gap: 16px;
   align-items: start;
-}
-
-.ad-layout-empty {
-  display: block;
-  max-width: 960px;
-}
-
-.ad-layout-empty :deep(.ad-slot-frame),
-.ad-layout-left-only :deep(.ad-slot-frame-empty),
-.ad-layout-right-only :deep(.ad-slot-frame-empty) {
-  display: none;
-}
-
-.ad-layout-left-only {
-  grid-template-columns: var(--ad-left-width) minmax(0, 800px);
-}
-
-.ad-layout-right-only {
-  grid-template-columns: minmax(0, 800px) var(--ad-right-width);
+  justify-content: start;
 }
 
 .ad-layout-main {
@@ -710,7 +673,7 @@ onUnmounted(() => {
 }
 
 /* 响应式布局 */
-@media (max-width: 1280px) {
+@media (max-width: 1480px) {
   .ad-layout {
     display: block;
     max-width: 960px;
