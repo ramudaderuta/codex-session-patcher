@@ -10,7 +10,7 @@
 - `GET /api/admin/intents`：按来源、状态、关键词筛选。
 - `PATCH /api/admin/intents/:id`：更新状态。
 
-后台文案统一使用“来源”，不使用“项目”。
+后台合作意向文案统一使用“来源”。广告后台按“项目 / 广告位 / 投放”管理。
 
 ## 官方线上地址
 
@@ -78,15 +78,28 @@ export MUGGLE_LEADS_ENDPOINT="https://你的 Worker 域名/api/sources/codex-ses
 
 官方版 Codex Session Patcher 已内置作者自己的线上提交地址，普通用户不需要配置这个环境变量。
 
-## 广告位管理
+## 广告投放后台
 
-Codex Session Patcher 的广告位由作者部署的 Worker 控制，不由本地用户配置。打开管理后台后进入“广告位”，选择页面和左右位置，上传图片，填写点击链接、尺寸和比例后保存。
+Codex Session Patcher 的广告位由作者部署的 Worker 控制，不由本地用户配置。
+
+打开 `https://leads.3jiezhiwai.com/admin` 后进入“广告位”。
+
+使用流程：
+
+1. 选择项目。
+2. 选择页面 tab 和广告位。
+3. 新建或编辑投放。
+4. 点击预览区上传图片，或拖拽图片到预览区。
+5. 填写点击链接、开始时间、结束时间、租金和显示方式。
+6. 保存草稿，或启用投放。
+
+同一个广告位同一时间只能有一条启用投放。公开接口只返回当前正在投放的广告。
 
 ```text
 https://leads.3jiezhiwai.com/admin
 ```
 
-后台会把广告位元数据保存到 D1，上传的图片保存到 R2。前端默认读取公开接口：
+后台会把项目、广告位和投放记录保存到 D1，上传的图片保存到 R2。前端默认读取公开接口：
 
 ```text
 https://leads.3jiezhiwai.com/api/sources/codex-session-patcher/ad-slots
