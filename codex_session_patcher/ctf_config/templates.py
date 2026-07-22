@@ -20,6 +20,7 @@ SECURITY_MODE_PROMPT = _load_prompt("ctf_private_deploy.md")
 SECURITY_MODE_PROMPT_GENERAL = _load_prompt("ctf_general.md")
 SECURITY_MODE_PROMPT_OPTIMIZED = _load_prompt("ctf_optimized.md")
 SECURITY_MODE_PROMPT_POXIAN = _load_prompt("ctf_poxian.md")
+SECURITY_MODE_PROMPT_BUILTIN = _load_prompt("codex_builtin.md")
 
 # ─── Claude Code 专用模板 ─────────────────────────────────────────────────────
 CLAUDE_CODE_CTF_OPTIMIZED = _load_prompt("claude_code_ctf_optimized.md")
@@ -44,6 +45,7 @@ BUILTIN_TEMPLATES: dict = {
         {'name': 'CTF Private Deploy', 'prompt': SECURITY_MODE_PROMPT, 'file': 'ctf_private_deploy.md'},
         {'name': 'General Security Testing', 'prompt': SECURITY_MODE_PROMPT_GENERAL, 'file': 'ctf_general.md'},
         {'name': 'Poxian System Prompt', 'prompt': SECURITY_MODE_PROMPT_POXIAN, 'file': 'ctf_poxian.md'},
+        {'name': 'Codex Built-in Instructions', 'prompt': SECURITY_MODE_PROMPT_BUILTIN, 'file': 'codex_builtin.md'},
     ],
     'claude_code': [
         {'name': 'Optimized CTF Workflow', 'prompt': CLAUDE_CODE_CTF_OPTIMIZED, 'default': True},
